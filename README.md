@@ -13,3 +13,5 @@ For more information about the package, see the following illustrative examples:
 
   1. [The family of two-piece distributions](https://rpubs.com/FJRubio/TPD)
   2. [twopiece R package](https://rpubs.com/FJRubio/twopiece)
+  
+  See also: [DTP](https://github.com/FJRubio67/DTP), [TPSAS](https://github.com/FJRubio67/TPSAS)
