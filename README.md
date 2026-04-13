@@ -1,6 +1,4 @@
-# twopiece
-
-## Two-Piece Distributions (R package)
+# Two-Piece Distributions (R package)
 
 [![R package](https://img.shields.io/badge/language-R-blue.svg)](https://www.r-project.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
