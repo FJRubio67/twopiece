@@ -25,9 +25,6 @@ ptp3(x, mu, par1, par2, FUN, param = "tp", log.p = FALSE)
 
 \item{log, }{log.p: logical; if TRUE, probabilities p are given as log(p).}
 }
-\value{
-
-}
 \description{
 Cumulative Probability Function for 3-parameter twopiece distributions
 }

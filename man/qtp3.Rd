@@ -25,9 +25,6 @@ qtp3(p, mu, par1, par2, FUN, param = "tp")
 
 \item{log, }{log.p: logical; if TRUE, probabilities p are given as log(p).}
 }
-\value{
-
-}
 \description{
 Quantile Function for 3-parameter twopiece distributions
 }

@@ -25,9 +25,6 @@ dtp3(x, mu, par1, par2, FUN, param = "tp", log = FALSE)
 
 \item{param:}{parameterizations used.}
 }
-\value{
-
-}
 \description{
 Probability Density Function for 3-parameter twopiece distributions
 }

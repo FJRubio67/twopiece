@@ -27,9 +27,6 @@ dtp4(x, mu, par1, par2, delta, FUN, param = "tp", log = FALSE)
 
 \item{param:}{parameterizations used.}
 }
-\value{
-
-}
 \description{
 Probability Density Function for 4-parameter twopiece distributions
 }

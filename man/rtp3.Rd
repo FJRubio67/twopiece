@@ -25,9 +25,6 @@ rtp3(n, mu, par1, par2, FUN, param = "tp")
 
 \item{log, }{log.p: logical; if TRUE, probabilities p are given as log(p).}
 }
-\value{
-
-}
 \description{
 Random Number Generation Function for 3-parameter twopiece distributions
 }

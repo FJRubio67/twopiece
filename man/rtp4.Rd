@@ -27,9 +27,6 @@ rtp4(n, mu, par1, par2, delta, FUN, param = "tp")
 
 \item{log, }{log.p: logical; if TRUE, probabilities p are given as log(p).}
 }
-\value{
-
-}
 \description{
 Random Number Generation Function for 4-parameter twopiece distributions
 }
