@@ -1,0 +1,149 @@
+---
+title: "Mollified Two-Piece Distributions"
+author: "[F Javier Rubio](https://sites.google.com/site/fjavierrubio67/)"
+date: "25/06/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Mollified Two-Piece Distributions
+
+[Mollifiers](https://en.wikipedia.org/wiki/Mollifier) can be used to smooth a density function. In particular, "mollifying" a two-piece density (or a double-two-piece density) function produces a [smooth](https://en.wikipedia.org/wiki/Smoothness) density which can be made arbitrarily close to the original two-piece density by controlling the scale parameter of the Mollifier. The "mollification" process removes the unpleasant lack of twice-differentiability at the mode in the family of two-piece distributions (the mollified density has derivatives of all orders). "There is no such thing as a free lunch": "mollified" densities are more difficult to evaluate. The following R code shows how to "mollify" some members of the two-piece family (see also 'twopiece', 'TPSAS', and 'DTP' [R packages](https://sites.google.com/site/fjavierrubio67/resources)). 
+
+**References.**
+
+1. [Mollifiers. From R. Showalter’s book on PDEs](https://www.math.psu.edu/~anovikov/acm105/mollifiers.pdf).
+
+2. [Inference in Two-Piece Location-Scale Models with Jeffreys Priors](http://projecteuclid.org/euclid.ba/1393251764).
+
+3. [Bayesian modelling of skewness and kurtosis with Two-Piece Scale and shape distributions](http://projecteuclid.org/euclid.ejs/1440680330).
+
+4. [On modelling asymmetric data using two-piece sinh–arcsinh distributions](http://projecteuclid.org/euclid.bjps/1469807223).
+
+```{r}
+rm(list=ls())
+# Required packages
+library(twopiece)
+library(DTP)
+library(TPSAS)
+
+##################################################################################
+# Mollifier (described in the Wikipedia entry)
+##################################################################################
+
+eta = 0.01 # Scale of the Mollifier
+
+# Temporary function to obtain the normalising constant of the Mollifier
+tempf0 = Vectorize(function(x) ifelse(abs(x/eta)<1, exp(-1/(1-(x/eta)^2))/eta,0) )
+# Normalising constant
+cons = integrate(tempf0,-eta,eta)$value
+
+# The Mollifier
+phi = Vectorize(function(x) ifelse(abs(x/eta)<1, exp(-1/(1-(x/eta)^2))/(eta*cons),0) )
+
+integrate(phi,-eta,eta) # It integrates 1
+# Plot of the Mollifier
+curve(phi,-eta,eta,n=1000,xlab=~epsilon,ylab="Mollifier",cex.axis=1.5,cex.lab=1.5)
+box()
+##################################################################################
+# Mollified two-piece normal: mu=0, sigma=1, gamma=0.5, "eps" parameterisation
+##################################################################################
+
+# Original two-piece normal density
+dtpn = Vectorize(function(x) dtp3(x,0,1,0.5,FUN=dnorm,param="eps"))
+
+# Mollified two-piece normal density
+dmtpn = Vectorize( function(x){
+  tempf = Vectorize(function(t) dtpn(x-t)*phi(t))
+  val = integrate(tempf,-eta,eta)
+  return(val$value)
+}
+)
+
+# Comparison: virtually equal (running time: ~5 seconds)
+curve(dtpn,-5,3,n=500,lwd=2,xlab="x",ylab="Density",cex.axis=1.5,cex.lab=1.5)
+curve(dmtpn,-5,3,col="red",n=500,lwd=2,lty=2,add=T)
+box()
+legend(-4.5, 0.35, c("TP","Mollified TP"),
+       text.col = "black", col= c("black","red"), lwd=2, lty = c(1, 2),
+       merge = TRUE, bg = "gray90")
+
+##################################################################################
+# Mollified two-piece Laplace: mu=0, sigma=1, gamma=0.5, "eps" parameterisation
+##################################################################################
+
+# Laplace density
+dlaplace <- function(y, mu=0, sigma=1, log=FALSE){
+  logPDF  <- (-log(2) - log(sigma) - abs(y-mu)/sigma)
+  ifelse(is.numeric(logPDF), ifelse(log, return(logPDF), return(exp(logPDF))), 
+         logPDF)
+}
+
+# Original two-piece Laplace density
+dtplap = Vectorize(function(x) dtp3(x,0,1,0.5,FUN=dlaplace,param="eps"))
+
+# Mollified two-piece Laplace density
+dmtplap = Vectorize( function(x){
+  tempf = Vectorize(function(t) dtplap(x-t)*phi(t))
+  val = integrate(tempf,-eta,eta)
+  return(val$value)
+}
+)
+
+# Comparison: virtually equal (running time: ~5 seconds)
+curve(dtplap,-7.5,3,n=500,lwd=2,xlab="x",ylab="Density",cex.axis=1.5,cex.lab=1.5)
+curve(dmtplap,-7.5,3,col="red",n=500,lwd=2,lty=2,add=T)
+box()
+legend(-6.5, 0.5, c("TP","Mollified TP"),
+       text.col = "black", col= c("black","red"), lwd=2, lty = c(1, 2),
+       merge = TRUE, bg = "gray90")
+
+##################################################################################################
+# Mollified two-piece sinh-arcsinh: mu=0, sigma=1, gamma=0.5, delta=0.75, "eps" parameterisation
+##################################################################################################
+
+# Original two-piece sinh-arcsinh density
+dtpsas0 = Vectorize(function(x) dtpsas(x,0,1,0.5,0.75,param="eps"))
+
+# Mollified two-piece sinh-arcsinh density
+dmtpsas = Vectorize( function(x){
+  tempf = Vectorize(function(t) dtpsas0(x-t)*phi(t))
+  val = integrate(tempf,-eta,eta)
+  return(val$value)
+}
+)
+
+# Comparison: virtually equal (running time: ~5 seconds)
+curve(dtpsas0,-7.5,3,n=500,lwd=2,xlab="x",ylab="Density",cex.axis=1.5,cex.lab=1.5)
+curve(dmtpsas,-7.5,3,col="red",n=500,lwd=2,lty=2,add=T)
+box()
+legend(-7, 0.3, c("TP","Mollified TP"),
+       text.col = "black", col= c("black","red"), lwd=2, lty = c(1, 2),
+       merge = TRUE, bg = "gray90")
+
+######################################################################################################################
+# Mollified double two-piece t: mu=0, sigma=1, gamma=0.5, delta1=1, delta2=5, "eps" parameterisation
+######################################################################################################################
+
+# Original double two-piece t density
+ddtpt = Vectorize(function(x) ddtp(x,0,1,0.5,1,5,f=dt,param="eps"))
+
+# Mollified two-piece t density
+dmdtpt = Vectorize( function(x){
+  tempf = Vectorize(function(t) ddtpt(x-t)*phi(t))
+  val = integrate(tempf,-eta,eta)
+  return(val$value)
+}
+)
+
+# Comparison: virtually equal (running time: ~5 seconds)
+curve(ddtpt,-10,3,n=500,lwd=2,xlab="x",ylab="Density",cex.axis=1.5,cex.lab=1.5)
+curve(dmdtpt,-10,3,col="red",n=500,lwd=2,lty=2,add=T)
+box()
+legend(-9, 0.3, c("TP","Mollified TP"),
+       text.col = "black", col= c("black","red"), lwd=2, lty = c(1, 2),
+       merge = TRUE, bg = "gray90")
+```
