@@ -1,0 +1,91 @@
+---
+title: "The family of two-piece distributions"
+author: '[F. Javier Rubio](https://sites.google.com/site/fjavierrubio67/) and [Mark F. J. Steel](http://www.warwick.ac.uk/go/msteel/)'
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+bibliography: references.bib
+---
+
+
+# The family of two-piece distributions 
+
+This R markdown contains illustrative examples about the family of two-piece distributions and the `twopiece' R package. A more detailed description of the family of two-piece distributions can be found at @rubio:2020. Additional examples on the twopiece R package can be found at "[twopiece R package
+](http://rpubs.com/FJRubio/twopiece)".
+
+Suppose that $f$ is a unimodal symmetric (about $0$) probability density function (pdf) from the location-scale family, possibly including a shape parameter $\delta$. Then, the pdf of a member of the two-piece family of distributions is:
+$$
+s\left(x; \mu,\sigma_1,\sigma_2, \delta\right) =
+  \begin{cases}
+\dfrac{2}{\sigma_1+\sigma_2}f\left(\dfrac{x-\mu}{\sigma_1};\delta\right), \mbox{if } x < \mu, \\
+\dfrac{2}{\sigma_1+\sigma_2}f\left(\dfrac{x-\mu}{\sigma_2};\delta\right), \mbox{if } x \geq \mu. \\
+\end{cases}
+$$
+For example,
+
+ 1. if $f$ is the Normal pdf, then $s$ is the two-piece Normal distribution proposed by @fechner:1897,
+ 2. if $f$ is the Laplace distribution, then $s$ is the asymmetric (or two-piece) Laplace distribution,
+ 3. if $f$ is the Student-$t$ distribution with $\delta>0$ degrees of freedom, then we obtain the two-piece $t$ distribution.
+
+The parameters of $s$ have a clear interpretation: $\mu$ is the (unique) mode of $s$, $\sigma_1$ controls the scale (spread) of $s$ on the left-hand side of $\mu$, while $\sigma_2$ controls the scale on the right-hand side of $\mu$, and the interpretation of $\delta$ is the same as that in $f$. Other interpretable parameterisations of these distributions are presented in @arellano:2005 and @rubio:2014. The mass allocated to both sides of the mode is only a function of the ratio of $\sigma_1$ and $\sigma_2$, in particular $P(X<\mu)=\sigma_1/(\sigma_1+\sigma_2)$, for any choice of $f$.
+
+# R code
+```{r}
+rm(list=ls())
+# Required packages
+# install.packages("flexclust")
+# install.packages("grid")
+# install.packages("lattice")
+# install.packages("modeltools")
+# install.packages("stats4")
+# install.packages("mvtnorm")
+# install.packages("label.switching")
+# install.packages("twopiece", repos="http://R-Forge.R-project.org")
+
+# Load the twopiece R package
+library(twopiece)
+
+# Two-piece normal density
+dtpn <- function(x, mu = 0, sigma1 = 1, sigma2 = 1, log = FALSE){
+  val <- dtp3(x, mu = mu, par1 = sigma1, par2 = sigma2, FUN = dnorm, param = "tp", log = log)
+  return(val)
+}
+
+# Two-piece Cauchy density
+dtpc <- function(x, mu = 0, sigma1 = 1, sigma2 = 1, log = FALSE){
+  val <- dtp4(x, mu = mu, par1 = sigma1, par2 = sigma2, delta = 1, FUN = dt, param = "tp", log = log)
+  return(val)
+}
+
+# Two-piece normal examples
+f <- Vectorize(function(x) dtpn(x,0,1,1))
+
+f1 <- Vectorize(function(x) dtpn(x,0,1,2))
+f2 <- Vectorize(function(x) dtpn(x,0,1,3))
+f3 <- Vectorize(function(x) dtpn(x,0,1,5))
+
+# Two-piece Cauchy examples
+h <- Vectorize(function(x) dtpc(x,0,1,1))
+
+h1 <- Vectorize(function(x) dtpc(x,0,2,1))
+h2 <- Vectorize(function(x) dtpc(x,0,3,1))
+h3 <- Vectorize(function(x) dtpc(x,0,5,1))
+
+# Figure 1a
+U <- 10
+L <- -5
+curve(f,L,U, n= 1000, xlab = "x", ylab = "Density", main ="Two-piece Normal", lwd = 2, cex.axis = 1.5, cex.lab = 1.5)
+curve(f1,L,U, n= 1000,add=T, col="red", lwd = 2)
+curve(f2,L,U, n= 1000,add=T, col="green", lwd = 2)
+curve(f3,L,U, n= 1000,add=T, col="blue", lwd = 2)
+
+
+# Figure 1b
+U <- 7.5
+L <- -15
+curve(h,L,U, n= 1000, xlab = "x", ylab = "Density", main ="Two-piece Cauchy", lwd = 2, cex.axis = 1.5, cex.lab = 1.5)
+curve(h1,L,U, n= 1000,add=T, col="red", lwd = 2)
+curve(h2,L,U, n= 1000,add=T, col="green", lwd = 2)
+curve(h3,L,U, n= 1000,add=T, col="blue", lwd = 2)
+```
+
