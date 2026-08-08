@@ -78,6 +78,7 @@ sim <- rtp3(1000, mu = 0, par1 = 1, par2 = 3, FUN = rnorm, param = "tp")
 
 - [The family of two-piece distributions](https://fjrubio-tpd.share.connect.posit.cloud/) — mathematical background and examples
 - [twopiece R package](https://rpubs.com/FJRubio/twopiece) — package walkthrough
+- [Fitting the two-piece normal distribution to the Volcanoes dataset](https://fjrubio-volcanoestp.share.connect.posit.cloud/)
 
 ## Related packages
 
