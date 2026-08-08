@@ -1,0 +1,252 @@
+---
+title: "Fitting the two-piece normal distribution to the Volcanoes dataset"
+author: '[F. Javier Rubio](https://sites.google.com/site/fjavierrubio67/) and Mark F.J. Steel'
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_float: true
+bibliography: references.bib
+---
+
+# Example
+
+In this post, we present four methods for fitting the two-piece normal (see [The family of two-piece distributions
+](https://rpubs.com/FJRubio/TPD) and [Bayesian inference on the two-piece normal distribution using rstan](https://rpubs.com/FJRubio/TPNSTAN)) to a popular data set containing the heights of 219 volcanoes:
+
+-- Method I: using the command `metrop()` from the R package `mcmc`
+
+-- Method II: using the command `adaptMetropGibbs()` from the R package `spBayes`
+
+-- Method III: using the command `Runtwalk()` from the R package `Rtwalk`
+
+-- Method IV: Maximum Likelihood Estimation
+
+The log posterior and log likelihood functions are implemented using the R package [twopiece](https://github.com/FJRubio67/twopiece). We use a flat prior on the skewness parameter $\gamma \in (0,1)$, which is based on a weakly informative prior proposed in [Inference in Two-Piece Location-Scale Models with Jeffreys Priors](https://doi.org/10.1214/13-BA849).
+
+# R code
+
+## Data preparation
+```{r, message=FALSE}
+## --------------------------------------------------------------------------------------------------------------------------------------
+rm(list=ls())
+
+# Required packages
+library(mcmc)
+library(normalp)
+#library(devtools)
+#install_github("FJRubio67/twopiece")
+library(twopiece)
+library(spBayes)
+library(Rtwalk)
+
+######################################################################################################
+#  Example with real data from Mudholkar and Hutson (2000). AG ~ Uniform(-1,1)
+######################################################################################################
+
+dat = 10*c(0.9,0.9,0.7,0.6,0.6,0.6,0.5,0.2,
+           1.9,1.9,1.7,1.6,1.6,1.3,1.1,1.0,1.0,1.0,
+           2.9,2.9,2.9,2.8,2.8,2.7,2.7,2.6,2.6,2.6,2.5,2.5,2.4,2.4,2.4,2.2,2.2,2.2,2.1,2.1,2.0,2.0,
+           3.9,3.9,3.8,3.7,3.6,3.6,3.6,3.5,3.5,3.5,3.5,3.4,3.4,3.2,3.2,3.1,3.1,3.0,
+           4.9,4.9,4.9,4.9,4.9,4.8,4.8,4.7,4.6,4.4,4.4,4.4,4.3,4.3,4.3,4.3,4.3,4.2,4.1,4.1,4.1,4.0,
+           5.9,5.9,5.7,5.7,5.7,5.6,5.6,5.6,5.6,5.6,5.6,5.5,5.5,5.4,5.4,5.3,5.2,5.2,5.2,5.1,5.1,5.0,5.0,
+           6.9,6.8,6.8,6.7,6.7,6.7,6.6,6.6,6.6,6.6,6.5,6.5,6.4,6.4,6.1,6.1,6.0,6.0,
+           7.9,7.8,7.8,7.8,7.7,7.6,7.5,7.5,7.5,7.4,7.3,7.3,7.2,7.1,7.1,7.1,7.0,7.0,7.0,7.0,
+           8.9,8.7,8.6,8.5,8.3,8.3,8.3,8.2,8.2,8.2,8.2,8.1,
+           9.9,9.7,9.7,9.6,9.5,9.5,9.4,9.4,9.3,9.3,9.2,9.1,9.0,9.0,9.0,
+           10.9,10.8,10.6,10.5,10.4,10.4,10.3,10.3,10.2,10.2,10.1,10.1,10.0,
+           11.9,11.6,11.6,11.4,11.3,11.3,11.2,11.1,11.1,11.0,
+           12.6,12.5,12.4,12.4,12.4,12.2,12.1,12.1,
+           13.8,13.7,13.4,13.3,13.0,
+           14.0,14.0,
+           15.7,15.6,15.6,
+           16.5,16.2,
+           17.9,17.2,
+           18.5,
+           19.9,19.7,19.3,19.3,19.0)
+
+hist(dat,probability=TRUE,xlab="Height", main="Volcanoes' data")
+```
+
+## Method I
+
+```{r}
+#---------------------------------------------------------------------------------------------------------
+# Method I: Using the command metrop() from the mcmc package
+#---------------------------------------------------------------------------------------------------------
+
+
+# alpha0 :   Shape parameter in the proposal prior AG ~ Beta(alpha0,beta0).
+# beta0  :   Shape parameter in the proposal prior AG ~ Beta(alpha0,beta0).
+alpha0 <- 1
+beta0 <- 1
+
+# log-posterior par=(mu,sigma,gamma)
+lp <- function(par){
+  if(par[2]>0 & par[3]>-1 & par[3]<1){
+    log.lik <- sum(dtp3(dat,par[1],par[2],par[3],FUN = dnorm,param="eps",log=T))
+    log.prior <- -log(par[2]) + (beta0-1)*log(1-par[3]) + (alpha0-1)*log(1+par[3])
+    return( log.lik + log.prior )
+  }
+  else return(-Inf)
+}
+
+# sc     :   Controls the proposal step size in the Metropolis sampling algorithm.
+sc <- c(0.5,0.5,0.1)
+
+# burnin :   Burn-in period.
+burnin = 50000
+
+# thin   :   Thinning period.
+thin = 100
+
+# NMH    :   Length of the Markov Chain.
+NMH = 550000
+
+# ini    :   Starting point for the MCMC sampler.
+ini = c(30,40,-0.65)
+
+# Metropolis sampler
+set.seed(1234)
+out1 <- metrop(lp, scale = sc, initial = ini, nbatch = NMH)
+
+# Posterior sample after burning and thinning
+ind = seq(burnin,NMH,thin)
+sim1 = t(rbind( out1$batch[ , 1][ind], out1$batch[ , 2][ind],out1$batch[ , 3][ind]))
+colnames(sim1) <- c("mu","sigma","gamma")
+acc = out1$accept
+paste('Acceptance rate = ', acc)
+
+# Summaries of the posterior sample
+apply(sim1,2,summary)
+
+hist(sim1[,1],probability=TRUE,xlab=~mu,main=~mu)
+hist(sim1[,2],probability=TRUE,xlab=~sigma,main=~sigma)
+hist(sim1[,3],probability=TRUE,xlab=~gamma,main=~gamma)
+
+
+bayes.est1 <- apply(sim1,2,mean) # Posterior mean
+
+# Fitted density using the posterior mean estimate
+fit.den1 <- Vectorize(function(x) dtp3(x,bayes.est1[1],bayes.est1[2],bayes.est1[3],param = "eps", FUN = dnorm))
+```
+
+## Method II
+
+```{r}
+#---------------------------------------------------------------------------------------------------------
+# Method II: Using the command adaptMetropGibbs from spBayes
+#---------------------------------------------------------------------------------------------------------
+
+# Number of batches and batch length
+n.batch <- 5500
+batch.length <- 10
+
+# Running an adaptive Metropolis within Gibbs sampler
+set.seed(1234)
+chain <- adaptMetropGibbs(ltd=lp, starting=ini, accept.rate=0.44, batch=n.batch, 
+                          batch.length=batch.length, report=100, verbose=FALSE)$p.theta.samples
+
+# # Burning and thinning the chain 
+burn <- 5000
+thin <- 50
+NS <- n.batch*batch.length
+index <- seq(burn,NS,thin)
+
+# Chain after burn in and thinning
+sim2 <- chain[index,]
+
+# Posterior samples (after thinning and burn-in period)
+apply(sim2,2,summary)
+
+hist(sim2[,1],probability=TRUE,xlab=~mu,main=~mu)
+hist(sim2[,2],probability=TRUE,xlab=~sigma,main=~sigma)
+hist(sim2[,3],probability=TRUE,xlab=~gamma,main=~gamma)
+
+bayes.est2 <- apply(sim2,2,mean) # posterior mean
+# Fitted density using the posterior mean estimate
+fit.den2 <- Vectorize(function(x) dtp3(x,bayes.est2[1],bayes.est2[2],bayes.est2[3],param = "eps", FUN = dnorm))
+
+```
+
+# Method III
+```{r}
+#---------------------------------------------------------------------------------------------------------
+# Method III: The twalk
+#---------------------------------------------------------------------------------------------------------
+
+# minus log-posterior par=(mu,sigma,gamma)
+mlp <- function(par){
+    log.lik <- sum(dtp3(dat,par[1],par[2],par[3],FUN = dnorm,param="eps",log=T))
+    log.prior <- -log(par[2]) + (beta0-1)*log(1-par[3]) + (alpha0-1)*log(1+par[3])
+    return( -log.lik - log.prior )
+}
+
+# Number of iterations 
+NMH = 55000
+
+# Support function 
+Support <- function(x) {((0 < x[2]) & (abs(x[3]) < 1))}
+
+# Function to generate the initial points in the sampler
+X0 <- function(x) { ini + runif(3,-0.05,0.05) }
+
+# Posterior samples
+set.seed(1234)
+out <- Runtwalk( dim=3,  Tr=NMH,  Obj=mlp, Supp=Support, x0=X0(), xp0=X0(),PlotLogPost = FALSE) 
+
+
+# Chain after burn in and thinning
+sim3 <- out$output[index,]
+
+# Posterior samples (after thinning and burn-in period)
+apply(sim3,2,summary)
+
+hist(sim3[,1],probability=TRUE,xlab=~mu,main=~mu)
+hist(sim3[,2],probability=TRUE,xlab=~sigma,main=~sigma)
+hist(sim3[,3],probability=TRUE,xlab=~gamma,main=~gamma)
+
+bayes.est3 <- apply(sim3,2,mean) # posterior mean
+# Fitted density using the posterior mean estimate
+fit.den3 <- Vectorize(function(x) dtp3(x,bayes.est3[1],bayes.est3[2],bayes.est3[3],param = "eps", FUN = dnorm))
+```
+
+# Method IV
+
+```{r}
+#---------------------------------------------------------------------------------------------------------
+# Method IV: Maximum Likelihood Estimator
+#---------------------------------------------------------------------------------------------------------
+
+# minus log-likelihood par=(mu,sigma,gamma,delta)
+ll <- function(par){
+  if(par[2]>0 & par[3]>-1 & par[3]<1){
+    tempval <- dtp3(dat,par[1],par[2],par[3],FUN = dnorm,param="eps",log=T)
+    return( -sum(tempval) )
+  }
+  else return(Inf)
+}
+
+# Optimization step
+OPT <- optim(c(30,40,-0.65),ll)
+MLE <- OPT$par # Maximum Likelihood Estimator
+# Fitted density using the MLE
+fit.den4 <- Vectorize(function(x) dtp3(x,MLE[1],MLE[2],MLE[3],param = "eps", FUN = dnorm))
+```
+
+# Comparison
+
+```{r}
+#**************************************************************************************************
+# Comparison of the fitted densities
+#**************************************************************************************************
+
+hist(dat,probability=TRUE,xlab="Height", main="Volcanoes data")
+curve(fit.den1,0,200, add=T, lwd = 2)
+curve(fit.den2,0,200, add=T, lwd = 2, lty = 2)
+curve(fit.den3,0,200, add=T, lwd = 2, lty = 3)
+curve(fit.den4,0,200, add=T, lwd = 2, lty = 4)
+legend("topright",  legend = c("Method I", "Method II", "Method III", "Method IV"), 
+       col = c("black","black","black","black"), lwd = c(2,2,2,2), lty = c(1,2,3,4) )
+box()
+```
